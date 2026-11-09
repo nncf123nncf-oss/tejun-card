@@ -127,7 +127,7 @@
       <div class="field"><label for="fAsk">「分からないときは」の一言 <span class="hint">（任意・30字まで）</span></label><textarea id="fAsk" rows="2" maxlength="60" autocomplete="off" placeholder="例: 分からないときは店長に聞いてください"></textarea><p class="cnt" id="fAskCnt"></p><p class="errmsg" id="fAskErr" role="alert"></p></div>
       <label class="chk"><input type="checkbox" id="fDate" checked><span id="fDateText">最後に直した日をカードに入れる</span></label>
       <div class="btns"><button type="button" class="danger-btn" id="clearBtn">入力を消す</button></div>
-      <p class="small" id="storeNote">入力と写真は、この端末のこのブラウザに下書きとして残ります。消えることがあるので、できあがったら印刷か保存をしてください。</p>
+      <p class="small" id="storeNote">入力と写真は、この端末のこのブラウザに下書きとして残ります。消えることがあるので、できあがったら印刷か保存をしてください。「入力を消す」を押すと、写真の下書きも消えます。同じページを2つのタブで開くと、あとから入力したほうの下書きが残ります。</p>
     </section>
     <section class="panel side" id="outSec" aria-labelledby="outH">
       <h2 id="outH">できあがり</h2>
@@ -414,7 +414,7 @@ var TP = (function () {
     if (!storeOk) t = 'このブラウザでは下書きを残せません（プライベートブラウズなど）。使うことはできます。ページを閉じる前に、印刷か保存をしてください。';
     else if (storeBroken) t = '前の下書きが読み取れませんでした。読み取れなかった下書きは別に残してあります。入力を始めると、新しい下書きとして残ります。';
     else if (!TP.ok()) t = '入力は下書きとして残りますが、このブラウザでは写真を残せません。ページを閉じる前に、印刷か保存をしてください。';
-    else t = '入力と写真は、この端末のこのブラウザに下書きとして残ります。消えることがあるので、できあがったら印刷か保存をしてください。';
+    else t = '入力と写真は、この端末のこのブラウザに下書きとして残ります。消えることがあるので、できあがったら印刷か保存をしてください。「入力を消す」を押すと、写真の下書きも消えます。同じページを2つのタブで開くと、あとから入力したほうの下書きが残ります。';
     if (photoMissing) t += ' 前の下書きの写真のうち、見つからなかったものがあります（その手順は写真なしになっています）。';
     n.textContent = t;
   }
