@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>写真つき手順カード</title>
+<meta name="description" content="スマホで撮った写真に1行ずつ説明を付けて手順を並べると、A4の1枚に収まった手順カードになります。印刷して貼ったり、画像で保存してスタッフに送ったりできます。写真はこの端末から送信しません。">
+<style>
+  :root {
+    --bg: #f2f5f8; --surface: #ffffff; --ink: #18222e; --ink2: #34404e; --ink3: #4f5b69;
+    --line: #d5dde6; --line-strong: #6f7d8c; --accent: #2b5c8a; --accent-ink: #ffffff; --accent-soft: #e6eef6;
+    --warn: #b23a2e; --warn-soft: #fbeae8; --danger: #a8231b; --danger-soft: #fbe9e7; --notice: #e9eef3;
+    --font: "Hiragino Sans","Yu Gothic","BIZ UDPGothic","Noto Sans JP",system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11161c; --surface: #1a2129; --ink: #eef3f8; --ink2: #cfd8e2; --ink3: #b3bfcc;
+      --line: #2e3945; --line-strong: #8696a8; --accent: #a8c8ea; --accent-ink: #102030; --accent-soft: #22313f;
+      --warn: #ff9e92; --warn-soft: #3a211e; --danger: #ff9a92; --danger-soft: #3a1f1c; --notice: #1f2832;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px 16px 32px; }
+  h1 { font-size: 22px; line-height: 1.3; margin: 8px 0 8px; overflow-wrap: anywhere; }
+  h2 { font-size: 18px; line-height: 1.4; margin: 0 0 10px; overflow-wrap: anywhere; }
+  h3 { font-size: 16px; line-height: 1.4; margin: 14px 0 8px; }
+  p { margin: 0 0 10px; }
+  .lead { color: var(--ink2); }
+  .small { font-size: 15px; color: var(--ink3); }
+  .hint { font-weight: 400; color: var(--ink3); font-size: 14px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 14px; min-width: 0; }
+  .notice { background: var(--notice); border: 1px solid var(--line-strong); border-left: 6px solid var(--accent); border-radius: 6px; padding: 10px 12px; margin: 0 0 14px; font-size: 16px; color: var(--ink2); }
+  .notice p:last-child { margin: 0; }
+  input[type=text], textarea {
+    display: block; width: 100%; max-width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: 16px; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px 10px; margin: 0; -webkit-appearance: none; appearance: none; }
+  textarea { resize: vertical; }
+  .bad { border: 2px solid var(--danger) !important; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  button { font: inherit; font-size: 16px; min-height: 44px; min-width: 44px; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line-strong);
+    background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-align: center; line-height: 1.3; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+  .danger-btn { color: var(--danger); border-color: var(--danger); }
+  .confirm { border: 2px solid var(--danger); background: var(--danger-soft); border-radius: 8px; padding: 10px 12px; margin: 0 0 10px; }
+  .okmsg { color: var(--ink2); font-weight: 600; font-size: 15px; }
+  .okmsg:empty { display: none; }
+  .errmsg { color: var(--danger); font-weight: 700; font-size: 15px; margin: 4px 0 0; }
+  .errmsg:empty { display: none; }
+  .field { margin: 0 0 12px; }
+  .field label { display: block; font-weight: 700; margin: 0 0 4px; }
+  .cnt { font-size: 14px; color: var(--ink3); margin: 2px 0 0; }
+  .cnt:empty { display: none; }
+  .chk { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; cursor: pointer; margin: 0 0 8px; line-height: 1.5; padding: 10px 0 0; }
+  .chk input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--accent); }
+  /* 手順の入力 */
+  .steps { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 10px; }
+  .step { border: 1px solid var(--line-strong); border-radius: 8px; padding: 10px; background: var(--surface); min-width: 0; }
+  .step.warn { border: 2px solid var(--warn); padding: 9px; }
+  .shead { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; }
+  .snum { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .shead .grow { flex: 1; min-width: 0; font-weight: 700; }
+  .shead button { padding: 6px 8px; min-width: 52px; font-size: 15px; }
+  .sphoto { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; min-width: 0; }
+  .thumb { flex: none; width: 96px; height: 64px; border-radius: 6px; border: 1px solid var(--line); background: var(--notice); object-fit: contain; display: block; }
+  .thumb.none { display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ink3); text-align: center; line-height: 1.3; }
+  .sphoto .pbtns { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+  .sphoto .pbtns button { padding: 6px 10px; font-size: 15px; }
+  .step .fileIn { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .step label.lb { display: block; font-weight: 700; margin: 0 0 4px; font-size: 15px; }
+  .warnchk { color: var(--warn); font-weight: 700; }
+  .warnchk input { accent-color: var(--warn); }
+  /* プレビュー（A4縦） */
+  .pv { width: 100%; margin: 0 0 10px; border: 1px solid var(--line-strong); background: #ffffff; overflow: auto; -webkit-overflow-scrolling: touch; }
+  .pv canvas { display: block; width: 100%; height: auto; }
+  .pv.zoom canvas { width: 220%; }
+  .fitmsg { font-weight: 700; font-size: 15px; margin: 0 0 10px; }
+  .fitmsg.ng { color: var(--danger); }
+  .fitmsg.ok { color: var(--ink2); }
+  .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 0 0 8px; }
+  .lp img { display: block; width: 100%; height: auto; border: 1px solid var(--line-strong); margin: 6px 0 0; }
+  .jump { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line-strong); color: var(--ink); text-decoration: none; background: var(--surface); }
+  .mw-footer { box-sizing: border-box; width: 100%; max-width: 100%; margin: 24px 0 0; padding: 16px; background: #F7F7F8;
+    border: 1px solid #D8D8DC; border-radius: 6px; color: #3A3A3E; font-family: system-ui, sans-serif; font-size: 12px; line-height: 1.7; }
+  .mw-footer p { margin: 0 0 6px; } .mw-footer p:last-child { margin-bottom: 0; } .mw-footer a { color: #0B5AA6; display: inline-block; padding: 13px 0; }
+  #printArea { display: none; }
+  @media (min-width: 960px) {
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 20px; align-items: start; }
+    .side { position: sticky; top: 12px; }
+    .jump { display: none; }
+  }
+  /* 印刷: 余白ごと描いた A4 の画像を1枚だけ出す */
+  @media print {
+    html, body { background: #ffffff !important; margin: 0; }
+    main { display: none !important; }
+    #printArea { display: block !important; }
+    #printArea img { display: block; width: auto; height: 296mm; max-width: 100%; max-height: 100vh; margin: 0 auto; object-fit: contain; }
+    #printArea .pmsg { font-size: 14pt; margin: 20mm; }
+  }
+  @page { size: A4 portrait; margin: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>写真つき手順カード</h1>
+  <p class="lead">スマホで撮った写真に1行ずつ説明を付けて、手順を並べます。A4の1枚に収まった手順カードになり、印刷して貼ったり、画像で保存してスタッフに送ったりできます。</p>
+  <div class="notice">
+    <p>写真は、この端末のブラウザの中だけで扱い、<strong>どこにも送信しません</strong>。</p>
+    <p>お客さまの顔や名前、お金・伝票などが写っていないか、確かめてから使ってください。この道具は、写っているものを見分けません。</p>
+  </div>
+  <div class="layout">
+    <section class="panel" id="inSec" aria-labelledby="inH">
+      <h2 id="inH">手順を並べる</h2>
+      <div class="btns"><button type="button" id="sampleBtn">見本を入れる（開店前の準備）</button></div>
+      <div id="confirmBox" class="confirm" hidden></div>
+      <p><a class="jump" href="#outSec">できあがりの手順カードを見る</a></p>
+      <div class="field"><label for="fTitle">作業の名前 <span class="hint">（必須・20字まで）</span></label><input type="text" id="fTitle" maxlength="40" autocomplete="off" placeholder="例: 閉店後のレジ締め"><p class="cnt" id="fTitleCnt"></p><p class="errmsg" id="fTitleErr" role="alert"></p></div>
+      <div class="field"><label for="fShop">お店の名前 <span class="hint">（任意・20字まで）</span></label><input type="text" id="fShop" maxlength="40" autocomplete="off" placeholder="例: ○○珈琲店"><p class="cnt" id="fShopCnt"></p><p class="errmsg" id="fShopErr" role="alert"></p></div>
+      <h3>手順 <span class="hint">（最大6つ・写真と説明1行）</span></h3>
+      <ol class="steps" id="steps"></ol>
+      <div class="btns"><button type="button" id="addBtn">＋ 手順を足す</button></div>
+      <p class="small" id="addNote"></p>
+      <div class="field"><label for="fAsk">「分からないときは」の一言 <span class="hint">（任意・30字まで）</span></label><textarea id="fAsk" rows="2" maxlength="60" autocomplete="off" placeholder="例: 分からないときは店長に聞いてください"></textarea><p class="cnt" id="fAskCnt"></p><p class="errmsg" id="fAskErr" role="alert"></p></div>
+      <label class="chk"><input type="checkbox" id="fDate" checked><span id="fDateText">最後に直した日をカードに入れる</span></label>
+      <div class="btns"><button type="button" class="danger-btn" id="clearBtn">入力を消す</button></div>
+      <p class="small" id="storeNote">入力と写真は、この端末のこのブラウザに下書きとして残ります。消えることがあるので、できあがったら印刷か保存をしてください。</p>
+    </section>
+    <section class="panel side" id="outSec" aria-labelledby="outH">
+      <h2 id="outH">できあがり</h2>
+      <div class="pv" id="pv"><canvas id="pvCanvas" width="840" height="1188" role="img" aria-label="手順カードのプレビュー"></canvas></div>
+      <div class="btns"><button type="button" id="zoomBtn" aria-pressed="false">大きく見る</button></div>
+      <p class="fitmsg" id="fitMsg" role="status"></p>
+      <div class="stack">
+        <button type="button" class="primary" id="printBtn">印刷する（A4縦1枚）</button>
+        <button type="button" id="saveBtn">画像で保存</button>
+        <button type="button" id="showBtn">画像を表示して保存</button>
+      </div>
+      <p class="okmsg" id="saveMsg" role="status"></p>
+      <div class="lp" id="lp"></div>
+      <p class="small">画像は、LINEなどでスタッフに送るときに使えます。印刷は、A4の紙に1枚で出ます。</p>
+    </section>
+  </div>
+  <footer class="mw-footer">
+    <p>みちAIワークス（MICHI AI WORKS）／代表 田中　泉</p>
+    <p>運営: <a href="https://michi-portfolio.vercel.app/" rel="noopener">みちAIワークス 公式サイト</a>（https://michi-portfolio.vercel.app/ ）／ お問い合わせ: <a href="mailto:nncf123nncf@gmail.com">nncf123nncf@gmail.com</a></p>
+    <p>入力した文字と写真は、お使いの端末のブラウザの中だけで扱い、当サイトには送信しません。入力と写真は、この端末のブラウザにだけ下書きとして保存します。手順の内容は作る人が書いたものをそのまま並べたもので、内容が正しいかは確かめていません。アクセス解析（Cloudflare Web Analytics）で、ページの閲覧状況（閲覧数・参照元・ブラウザの種類など）を計測しています。</p>
+    <p>ログイン・会員登録・パスワードの入力を求めることはありません。</p>
+  </footer>
+</main>
+<div id="printArea" aria-hidden="true"></div>
+
+<script id="core">
+var TC = (function () {
+  var KEY = 'tejun-card-v1';
+  var LIM = { title: 20, shop: 20, ask: 30, text: 40, note: 20 };
+  var MAX_STEPS = 6;
+  var RE_CTRL = new RegExp('[' + String.fromCharCode(0) + '-' + String.fromCharCode(0x1f) + String.fromCharCode(0x7f) + '-' + String.fromCharCode(0x9f) + String.fromCharCode(0x2028, 0x2029) + ']+', 'g');
+  var RE_INVISIBLE = new RegExp('(?!' + String.fromCharCode(0x200d) + ')[\\p{Cf}' + String.fromCharCode(0x3164, 0x115f, 0x1160, 0xffa0) + ']', 'gu');
+  function clean(s) { return String(s == null ? '' : s).replace(RE_CTRL, ' ').replace(RE_INVISIBLE, '').replace(/\s+/g, ' ').trim(); }
+  function cpLen(s) { return Array.from(s).length; }
+  function newId() { return 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function emptyStep() { return { id: newId(), text: '', warn: false, note: '', photo: false }; }
+  function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function emptyState() { return { title: '', shop: '', ask: '', showDate: true, date: today(), steps: [emptyStep()] }; }
+  function dateLabel(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[1]) + '年' + (+m[2]) + '月' + (+m[3]) + '日 更新' : ''; }
+
+  // 入力から、カードに出す内容と誤りを作る。写真も説明もない手順は数えない
+  function build(st, hasImg) {
+    var errs = {};
+    function chk(key, v, max, what) { var n = cpLen(clean(v)); if (n > max) { errs[key] = what + 'は' + max + '字までです（今' + n + '字）。'; return ''; } return clean(v); }
+    var out = { errs: errs, title: chk('title', st.title, LIM.title, '作業の名前'), shop: chk('shop', st.shop, LIM.shop, 'お店の名前'),
+      ask: chk('ask', st.ask, LIM.ask, '「分からないときは」の一言'), date: st.showDate ? dateLabel(st.date) : '', steps: [] };
+    if (!clean(st.title) && !errs.title) errs.title = '作業の名前を入れてください。';
+    st.steps.forEach(function (s) {
+      var photo = !!(s.photo && hasImg(s.id)), text = chk('t-' + s.id, s.text, LIM.text, '説明');
+      var note = s.warn ? chk('n-' + s.id, s.note, LIM.note, '注意の一言') : '';
+      if (!clean(s.text) && !photo) return;
+      if (!clean(s.text) && !errs['t-' + s.id]) errs['t-' + s.id] = '説明を1行入れてください。';
+      out.steps.push({ id: s.id, text: text, warn: !!s.warn, note: note, photo: photo });
+    });
+    return out;
+  }
+  function hasErr(b) { return Object.keys(b.errs).length > 0; }
+
+  function loadState(raw) {
+    var o; try { o = JSON.parse(raw); } catch (e) { return null; }
+    if (!o || typeof o !== 'object' || o.v !== 1 || !o.s || typeof o.s !== 'object' || !Array.isArray(o.s.steps)) return null;
+    var s = o.s, st = emptyState();
+    function str(v, max) { return typeof v === 'string' ? Array.from(v).slice(0, max).join('') : ''; }
+    st.title = str(s.title, 80); st.shop = str(s.shop, 80); st.ask = str(s.ask, 80);
+    st.showDate = s.showDate !== false;
+    st.date = /^\d{4}-\d{2}-\d{2}$/.test(s.date || '') ? s.date : today();
+    var seen = {};
+    st.steps = s.steps.slice(0, MAX_STEPS).filter(function (x) { return x && typeof x === 'object'; }).map(function (x) {
+      var id = typeof x.id === 'string' && /^s[a-z0-9]{3,30}$/.test(x.id) && !seen[x.id] ? x.id : newId(); seen[id] = 1;
+      return { id: id, text: str(x.text, 80), warn: x.warn === true, note: str(x.note, 40), photo: x.photo === true };
+    });
+    if (!st.steps.length) st.steps = [emptyStep()];
+    return st;
+  }
+  function dumpState(st) { return JSON.stringify({ v: 1, s: st }); }
+
+  /* ---- 描画（A4縦。寸法はmm、k = 1mmあたりのpx） ---- */
+  var FONT = '"Hiragino Sans","Yu Gothic","BIZ UDPGothic","Noto Sans JP",sans-serif';
+  var PT = 0.3528;            // 1pt = 0.3528mm
+  var A4 = { w: 210, h: 297 }, M = 8;
+  var C = { ink: '#18222e', ink2: '#4a5563', accent: '#2b5c8a', warn: '#b23a2e', line: '#9aa6b2', photoBg: '#eef1f4' };
+  var NO_HEAD = '、。，．・：；！？）」』】〕〉》ー～…‥ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ々!),.:;?]}%';
+  var NO_TAIL = '（「『【〔〈《([{';
+  // 1文字ずつ測って折り返す（行頭に句読点・閉じ括弧・小さい字を置かない）
+  function wrap(ctx, text, maxW) {
+    var ch = Array.from(text), lines = [], cur = '';
+    for (var i = 0; i < ch.length; i++) {
+      var t = cur + ch[i];
+      if (cur && ctx.measureText(t).width > maxW) {
+        if (NO_HEAD.indexOf(ch[i]) >= 0 && Array.from(cur).length > 1) {          // 前の1字を次の行へ送る
+          var a = Array.from(cur), last = a.pop(); lines.push(a.join('')); cur = last + ch[i];
+        } else if (NO_TAIL.indexOf(Array.from(cur).slice(-1)[0]) >= 0 && Array.from(cur).length > 1) {
+          var b = Array.from(cur), l2 = b.pop(); lines.push(b.join('')); cur = l2 + ch[i];
+        } else { lines.push(cur); cur = ch[i]; }
+      } else cur = t;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  function font(ctx, k, pt, weight) { ctx.font = (weight || 500) + ' ' + (pt * PT * k) + 'px ' + FONT; }
+  function rrect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function drawContain(ctx, img, x, y, w, h) {
+    var iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    if (!iw || !ih) return;
+    var s = Math.min(w / iw, h / ih), dw = iw * s, dh = ih * s;
+    ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  }
+  function textLines(ctx, k, lines, x, y, pt, lh, color, weight, align, w) {
+    font(ctx, k, pt, weight); ctx.fillStyle = color; ctx.textBaseline = 'top'; ctx.textAlign = align || 'left';
+    var px = align === 'center' ? x + w / 2 : x;
+    lines.forEach(function (ln, i) { ctx.fillText(ln, px * k, (y + i * pt * PT * lh) * k); });
+    ctx.textAlign = 'left';
+  }
+
+  // 1つの手順の枠を描く。fs = 説明の文字の大きさ(pt)
+  function drawStep(ctx, k, s, n, x, y, w, h, imgOf, wide, fs) {
+    var p = 3, badgeR = 4.6;
+    ctx.save();
+    rrect(ctx, x * k, y * k, w * k, h * k, 2 * k);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.lineWidth = (s.warn ? 1.1 : 0.35) * k; ctx.strokeStyle = s.warn ? C.warn : C.line; ctx.stroke();
+    var img = s.photo ? imgOf(s.id) : null;
+    var nfs = Math.max(11, fs - 1), lh = 1.45;
+    // 説明と注意の行
+    function measureText(tw, size) {
+      font(ctx, k, size, 600); var tl = wrap(ctx, s.text, tw * k);
+      var nl = []; if (s.warn && s.note) { font(ctx, k, nfs, 800); nl = wrap(ctx, '注意：' + s.note, tw * k); }
+      return { tl: tl, nl: nl, th: tl.length * size * PT * lh + (nl.length ? 1.5 + nl.length * nfs * PT * 1.4 : 0) };
+    }
+    if (img && !wide) {
+      var tw = w - 2 * p, m = measureText(tw, fs);
+      var ph = Math.max(10, h - 2 * p - m.th - 2.5);
+      ctx.fillStyle = C.photoBg; ctx.fillRect((x + p) * k, (y + p) * k, tw * k, ph * k);
+      drawContain(ctx, img, (x + p) * k, (y + p) * k, tw * k, ph * k);
+      var ty = y + p + ph + 2.5;
+      textLines(ctx, k, m.tl, x + p, ty, fs, lh, C.ink, 600);
+      if (m.nl.length) textLines(ctx, k, m.nl, x + p, ty + m.tl.length * fs * PT * lh + 1.5, nfs, 1.4, C.warn, 800);
+    } else if (img && wide) {
+      var ph2 = h - 2 * p, pw = Math.min(ph2 * 1.5, w * 0.55);
+      ctx.fillStyle = C.photoBg; ctx.fillRect((x + p) * k, (y + p) * k, pw * k, ph2 * k);
+      drawContain(ctx, img, (x + p) * k, (y + p) * k, pw * k, ph2 * k);
+      var tx = x + p + pw + 5, tw2 = w - (tx - x) - p - (s.warn ? 0 : 0), big = Math.max(fs, 15), m2 = measureText(tw2, big);
+      var ty2 = y + Math.max(p + badgeR * 0, (h - m2.th) / 2);
+      textLines(ctx, k, m2.tl, tx, ty2, big, lh, C.ink, 600);
+      if (m2.nl.length) textLines(ctx, k, m2.nl, tx, ty2 + m2.tl.length * big * PT * lh + 1.5, nfs, 1.4, C.warn, 800);
+    } else {
+      // 写真のない手順: 説明だけを大きく
+      var big3 = wide ? 18 : 15, tx3 = x + p + badgeR * 2 + 3, tw3 = w - (tx3 - x) - p, m3 = measureText(tw3, big3);
+      while (m3.th > h - 2 * p - 4 && big3 > fs) { big3 -= 1; m3 = measureText(tw3, big3); }
+      var ty3 = y + Math.max(p + 1, (h - m3.th) / 2);
+      textLines(ctx, k, m3.tl, tx3, ty3, big3, lh, C.ink, 600);
+      if (m3.nl.length) textLines(ctx, k, m3.nl, tx3, ty3 + m3.tl.length * big3 * PT * lh + 1.5, nfs, 1.4, C.warn, 800);
+    }
+    // 番号
+    var cx = x + p + badgeR + 1.2, cy = y + p + badgeR + 1.2;
+    ctx.beginPath(); ctx.arc(cx * k, cy * k, badgeR * k, 0, Math.PI * 2); ctx.fillStyle = C.accent; ctx.fill();
+    ctx.lineWidth = 0.5 * k; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+    font(ctx, k, 16, 800); ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(String(n), cx * k, (cy + 0.2) * k); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    // 「注意」札
+    if (s.warn) {
+      font(ctx, k, 11, 800); var lw = ctx.measureText('注意').width / k + 4, lhh = 11 * PT + 2.4;
+      var lx = x + w - lw - 1.6, ly = y + 1.6;
+      rrect(ctx, lx * k, ly * k, lw * k, lhh * k, 1 * k); ctx.fillStyle = C.warn; ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.textBaseline = 'top'; ctx.fillText('注意', (lx + 2) * k, (ly + 1.2) * k);
+    }
+    ctx.restore();
+  }
+
+  // b = build の結果。imgOf(id) = 写真（Image）。k = 1mmあたりのpx
+  function render(canvas, b, imgOf, k) {
+    canvas.width = Math.round(A4.w * k); canvas.height = Math.round(A4.h * k);
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    var W = A4.w - 2 * M, y = M;
+    // 見出し
+    var title = b.title || '（作業の名前）';
+    font(ctx, k, 20, 800); var tl = wrap(ctx, title, W * k);
+    textLines(ctx, k, tl, M, y, 20, 1.3, b.title ? C.ink : '#9aa6b2', 800);
+    y += tl.length * 20 * PT * 1.3 + 1;
+    var sub = [b.shop, b.date].filter(Boolean).join('　');
+    if (sub) { textLines(ctx, k, [sub], M, y, 10.5, 1.4, C.ink2, 500); y += 10.5 * PT * 1.4 + 0.5; }
+    ctx.fillStyle = C.accent; ctx.fillRect(M * k, (y + 1) * k, W * k, 0.7 * k);
+    y += 4.5;
+    // 下の一言
+    var bottom = A4.h - M;
+    if (b.ask) {
+      font(ctx, k, 12, 700); var al = wrap(ctx, b.ask, W * k), ah = al.length * 12 * PT * 1.4;
+      bottom -= ah; textLines(ctx, k, al, M, bottom, 12, 1.4, C.ink, 700); bottom -= 4;
+    }
+    var n = b.steps.length;
+    if (!n) {
+      textLines(ctx, k, ['写真と説明を入れると、ここに手順が並びます。'], M, y + 10, 13, 1.4, '#9aa6b2', 600);
+      return;
+    }
+    var gap = 5, gridH = bottom - y;
+    if (n <= 3) {
+      var rows = n, ch = Math.min(95, (gridH - gap * (rows - 1)) / rows);
+      b.steps.forEach(function (s, i) { drawStep(ctx, k, s, i + 1, M, y + i * (ch + gap), W, ch, imgOf, true, 15); });
+    } else {
+      var rows2 = Math.ceil(n / 2), cw = (W - gap) / 2, ch2 = (gridH - gap * (rows2 - 1)) / rows2;
+      b.steps.forEach(function (s, i) {
+        var col = i % 2, row = Math.floor(i / 2);
+        drawStep(ctx, k, s, i + 1, M + col * (cw + gap), y + row * (ch2 + gap), cw, ch2, imgOf, false, 12);
+      });
+    }
+  }
+
+  return { KEY: KEY, LIM: LIM, MAX_STEPS: MAX_STEPS, clean: clean, cpLen: cpLen, emptyStep: emptyStep, emptyState: emptyState,
+    build: build, hasErr: hasErr, loadState: loadState, dumpState: dumpState, render: render, wrap: wrap, dateLabel: dateLabel };
+})();
+</script>
+
+<script id="photos">
+// 写真の下書き（IndexedDB）。使えないときは、写真は開いているあいだだけ持つ
+var TP = (function () {
+  var db = null, ok = true, mem = {}, opening = null;
+  function open() {
+    if (opening) return opening;
+    return opening = new Promise(function (res) {
+      try {
+        var rq = indexedDB.open('tejun-card', 1);
+        rq.onupgradeneeded = function () { rq.result.createObjectStore('photos'); };
+        rq.onsuccess = function () { db = rq.result; res(true); };
+        rq.onerror = function () { ok = false; res(false); };
+        rq.onblocked = function () { ok = false; res(false); };
+      } catch (e) { ok = false; res(false); }
+    });
+  }
+  // 開くのを待ってから読み書きする（開く前に入れた写真も残す）
+  function tx(mode, fn) {
+    return open().then(function () { return new Promise(function (res) {
+      if (!db) { res(null); return; }
+      try {
+        var t = db.transaction('photos', mode), st = t.objectStore('photos'), r = fn(st);
+        t.oncomplete = function () { res(r && 'result' in r ? r.result : true); };
+        t.onerror = t.onabort = function () { ok = false; res(null); };
+      } catch (e) { ok = false; res(null); }
+    }); });
+  }
+  return {
+    ready: open,
+    ok: function () { return ok && !!db; },
+    put: function (id, blob) { mem[id] = blob; return tx('readwrite', function (s) { return s.put(blob, id); }); },
+    get: function (id) { return mem[id] ? Promise.resolve(mem[id]) : tx('readonly', function (s) { return s.get(id); }); },
+    del: function (id) { delete mem[id]; return tx('readwrite', function (s) { return s.delete(id); }); },
+    clear: function () { mem = {}; return tx('readwrite', function (s) { return s.clear(); }); }
+  };
+})();
+</script>
+
+<script id="ui">
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function h(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'text') e.textContent = attrs[k];
+      else if (k === 'class') e.className = attrs[k];
+      else if (attrs[k] === true) e.setAttribute(k, '');
+      else if (attrs[k] != null && attrs[k] !== false) e.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { if (c != null) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+
+  /* ---- 下書き（文字は localStorage、写真は IndexedDB） ---- */
+  var storeOk = true, storeBroken = false, photoMissing = false;
+  function readStore() {
+    var raw = null;
+    try { raw = localStorage.getItem(TC.KEY); } catch (e) { storeOk = false; return null; }
+    if (raw == null) return null;
+    var st = TC.loadState(raw);
+    if (!st) { storeBroken = true; try { if (localStorage.getItem(TC.KEY + '-backup') !== raw) localStorage.setItem(TC.KEY + '-backup', raw); } catch (e) { storeOk = false; } }
+    return st;
+  }
+  function writeStore() {
+    if (!storeOk) return;
+    try { localStorage.setItem(TC.KEY, TC.dumpState(state)); storeBroken = false; } catch (e) { storeOk = false; }
+    noteStore();
+  }
+  function noteStore() {
+    var n = $('storeNote'), t;
+    if (!storeOk) t = 'このブラウザでは下書きを残せません（プライベートブラウズなど）。使うことはできます。ページを閉じる前に、印刷か保存をしてください。';
+    else if (storeBroken) t = '前の下書きが読み取れませんでした。読み取れなかった下書きは別に残してあります。入力を始めると、新しい下書きとして残ります。';
+    else if (!TP.ok()) t = '入力は下書きとして残りますが、このブラウザでは写真を残せません。ページを閉じる前に、印刷か保存をしてください。';
+    else t = '入力と写真は、この端末のこのブラウザに下書きとして残ります。消えることがあるので、できあがったら印刷か保存をしてください。';
+    if (photoMissing) t += ' 前の下書きの写真のうち、見つからなかったものがあります（その手順は写真なしになっています）。';
+    n.textContent = t;
+  }
+  var state = readStore() || TC.emptyState();
+
+  /* ---- 写真 ---- */
+  var imgs = {};   // id -> HTMLImageElement（縮めたもの）
+  function imgOf(id) { return imgs[id] || null; }
+  function hasImg(id) { return !!imgs[id]; }
+  function blobToImg(blob) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(blob), im = new Image();
+      im.onload = function () { res(im); };
+      im.onerror = function () { URL.revokeObjectURL(url); rej(new Error('decode')); };
+      im.src = url;
+    });
+  }
+  // 長辺1280pxに縮めてJPEGにする（描き直すので、撮影場所などの情報は残らない）
+  function shrink(im) {
+    var w = im.naturalWidth, hh = im.naturalHeight, s = Math.min(1, 1280 / Math.max(w, hh));
+    var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(hh * s));
+    var cx = c.getContext('2d'); cx.fillStyle = '#ffffff'; cx.fillRect(0, 0, c.width, c.height); cx.drawImage(im, 0, 0, c.width, c.height);
+    return new Promise(function (res, rej) {
+      if (c.toBlob) c.toBlob(function (b) { b ? res(b) : rej(new Error('blob')); }, 'image/jpeg', 0.85);
+      else { try { var u = c.toDataURL('image/jpeg', 0.85), bin = atob(u.split(',')[1]), a = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); res(new Blob([a], { type: 'image/jpeg' })); } catch (e) { rej(e); } }
+    });
+  }
+  // 手順ごとの受付番号。読み込みが終わったとき、最後の受付で、手順がまだあるときだけ反映する
+  var tokens = {};
+  function take(id) { tokens[id] = (tokens[id] || 0) + 1; return tokens[id]; }
+  function stillMine(step, tok) { return tokens[step.id] === tok && state.steps.indexOf(step) >= 0; }
+  function applyPhoto(step, tok, blob) {
+    return blobToImg(blob).then(function (im2) {
+      if (!stillMine(step, tok)) { URL.revokeObjectURL(im2.src); return false; }
+      if (imgs[step.id]) URL.revokeObjectURL(imgs[step.id].src);
+      imgs[step.id] = im2; step.photo = true;
+      TP.put(step.id, blob).then(function () { noteStore(); });
+      refreshPhoto(step); update();
+      return true;
+    });
+  }
+  function setPhoto(step, file, msgEl) {
+    msgEl.textContent = '';
+    if (!file) return;
+    if ((file.type && !/^image\//.test(file.type)) || /svg/i.test(file.type || '')) { msgEl.textContent = 'この写真は読み込めませんでした（写真のファイルを選んでください）。'; return; }
+    if (file.size > 20 * 1024 * 1024) { msgEl.textContent = 'この写真は大きすぎて読み込めませんでした（20MBまで）。'; return; }
+    var tok = take(step.id);
+    msgEl.textContent = '写真を読み込んでいます…';
+    blobToImg(file).then(function (im) {
+      URL.revokeObjectURL(im.src);
+      if (im.naturalWidth < 8 || im.naturalHeight < 8) throw new Error('tiny');
+      return shrink(im);
+    }).then(function (blob) {
+      if (!stillMine(step, tok)) return;
+      return applyPhoto(step, tok, blob).then(function () { if (tokens[step.id] === tok) msgEl.textContent = ''; });
+    }).catch(function () { if (tokens[step.id] === tok) msgEl.textContent = 'この写真は読み込めませんでした。別の写真を選ぶか、写真なしで説明だけにしてください。'; });
+  }
+  function dropPhoto(step) {
+    take(step.id);
+    if (imgs[step.id]) { URL.revokeObjectURL(imgs[step.id].src); delete imgs[step.id]; }
+    step.photo = false; TP.del(step.id);
+  }
+
+  /* ---- 手順の入力 ---- */
+  function countText(v, max) { var n = TC.cpLen(TC.clean(v)); return n ? n + ' / ' + max + '字' + (n > max ? '（多すぎます）' : '') : ''; }
+  function askThen(box, text, okLabel, fn) {
+    box.textContent = '';
+    var ok = h('button', { type: 'button', class: 'primary', text: okLabel }), no = h('button', { type: 'button', text: 'やめる' });
+    ok.addEventListener('click', function () { box.hidden = true; fn(); });
+    no.addEventListener('click', function () { box.hidden = true; });
+    box.appendChild(h('p', { text: text })); box.appendChild(h('div', { class: 'btns' }, [ok, no]));
+    box.hidden = false; ok.focus();
+  }
+  function move(i, d) {
+    var j = i + d; if (j < 0 || j >= state.steps.length) return;
+    var t = state.steps[i]; state.steps[i] = state.steps[j]; state.steps[j] = t;
+    renderSteps(); update();
+    var btn = document.querySelector('#steps > li:nth-child(' + (j + 1) + ') .' + (d < 0 ? 'upb' : 'dnb'));
+    if (btn && !btn.disabled) btn.focus(); else { var any = document.querySelector('#steps > li:nth-child(' + (j + 1) + ') .snum'); if (any) any.focus(); }
+  }
+  // 写真の行（サムネイルとボタン）。写真が変わったときは、この行だけを差し替える（入力中の文字を切らない）
+  function photoRow(s, file) {
+    var n = state.steps.indexOf(s) + 1, thumb;
+    if (imgs[s.id]) { thumb = h('img', { class: 'thumb', alt: '手順' + n + 'の写真' }); thumb.src = imgs[s.id].src; }
+    else thumb = h('span', { class: 'thumb none', text: '写真なし' });
+    var pick = h('button', { type: 'button', text: imgs[s.id] ? '写真を変える' : '写真を選ぶ・撮る' });
+    pick.addEventListener('click', function () { file.click(); });
+    var pb = h('div', { class: 'pbtns' }, [pick]);
+    if (imgs[s.id]) { var rm = h('button', { type: 'button', text: '写真を外す' }); rm.addEventListener('click', function () { dropPhoto(s); refreshPhoto(s); update(); pick.focus(); }); pb.appendChild(rm); }
+    return h('div', { class: 'sphoto' }, [thumb, pb]);
+  }
+  function refreshPhoto(s) {
+    var li = document.querySelector('#steps > li[data-id="' + s.id + '"]'); if (!li) return;
+    var old = li.querySelector('.sphoto'), file = li.querySelector('.fileIn'); if (!old || !file) return;
+    var focused = old.contains(document.activeElement);
+    var row = photoRow(s, file); li.replaceChild(row, old);
+    if (focused) { var b = row.querySelector('button'); if (b) b.focus(); }
+  }
+  function renderSteps() {
+    var ol = $('steps'); ol.textContent = '';
+    state.steps.forEach(function (s, i) {
+      var li = h('li', { class: 'step' + (s.warn ? ' warn' : '') });
+      var up = h('button', { type: 'button', class: 'upb', text: '上へ', 'aria-label': '手順' + (i + 1) + 'を上へ' }); up.disabled = i === 0;
+      var dn = h('button', { type: 'button', class: 'dnb', text: '下へ', 'aria-label': '手順' + (i + 1) + 'を下へ' }); dn.disabled = i === state.steps.length - 1;
+      var del = h('button', { type: 'button', class: 'danger-btn', text: '消す', 'aria-label': '手順' + (i + 1) + 'を消す' });
+      up.addEventListener('click', function () { move(i, -1); });
+      dn.addEventListener('click', function () { move(i, 1); });
+      var cbox = h('div', { class: 'confirm' }); cbox.hidden = true;
+      del.addEventListener('click', function () {
+        var empty = !TC.clean(s.text) && !s.photo && !TC.clean(s.note);
+        function go() { dropPhoto(s); state.steps.splice(i, 1); if (!state.steps.length) state.steps.push(TC.emptyStep()); renderSteps(); update(); }
+        if (empty) go(); else askThen(cbox, '手順' + (i + 1) + 'を消します（写真も消えます）。よろしいですか。', '消す', go);
+      });
+      li.appendChild(h('div', { class: 'shead' }, [h('span', { class: 'snum', text: String(i + 1), tabindex: '-1', 'aria-label': '手順' + (i + 1) }), h('span', { class: 'grow', text: '手順' }), up, dn, del]));
+      li.appendChild(cbox);
+      // 写真
+      var fid = 'file-' + s.id, file = h('input', { type: 'file', accept: 'image/*', id: fid, class: 'fileIn', tabindex: '-1', 'aria-hidden': 'true' });
+      var pmsg = h('p', { class: 'errmsg', role: 'alert' });
+      file.addEventListener('change', function () { var f = file.files && file.files[0]; file.value = ''; setPhoto(s, f, pmsg); });
+      li.setAttribute('data-id', s.id);
+      li.appendChild(photoRow(s, file));
+      li.appendChild(file); li.appendChild(pmsg);
+      // 説明
+      var tid = 'txt-' + s.id, ta = h('textarea', { id: tid, rows: 3, maxlength: 80, autocomplete: 'off', placeholder: '例: 釣り銭の小銭を種類ごとに数える' });
+      ta.value = s.text;
+      var tc = h('p', { class: 'cnt' }), te = h('p', { class: 'errmsg', id: 'er-t-' + s.id, role: 'alert' });
+      tc.textContent = countText(s.text, TC.LIM.text);
+      ta.addEventListener('input', function () { s.text = ta.value; tc.textContent = countText(ta.value, TC.LIM.text); update(); });
+      li.appendChild(h('div', { class: 'field' }, [h('label', { class: 'lb', for: tid, text: '説明（40字まで）' }), ta, tc, te]));
+      // ここ注意
+      var wc = h('input', { type: 'checkbox' }); wc.checked = !!s.warn;
+      var nid = 'note-' + s.id, ni = h('input', { type: 'text', id: nid, maxlength: 40, autocomplete: 'off', placeholder: '例: 数えた金額をノートに書く' }); ni.value = s.note;
+      var nc = h('p', { class: 'cnt' }), ne = h('p', { class: 'errmsg', id: 'er-n-' + s.id, role: 'alert' });
+      nc.textContent = countText(s.note, TC.LIM.note);
+      var nbox = h('div', { class: 'field' }, [h('label', { class: 'lb', for: nid, text: '注意の一言（任意・20字まで）' }), ni, nc, ne]); nbox.hidden = !s.warn;
+      wc.addEventListener('change', function () { s.warn = wc.checked; li.classList.toggle('warn', s.warn); nbox.hidden = !s.warn; update(); });
+      ni.addEventListener('input', function () { s.note = ni.value; nc.textContent = countText(ni.value, TC.LIM.note); update(); });
+      li.appendChild(h('label', { class: 'chk warnchk' }, [wc, h('span', { text: 'ここ注意（赤い枠と「注意」の札を付ける）' })]));
+      li.appendChild(nbox);
+      ol.appendChild(li);
+    });
+    var full = state.steps.length >= TC.MAX_STEPS;
+    $('addBtn').disabled = full;
+    $('addNote').textContent = full ? '手順は6つまでです（A4の1枚に収めるため）。分けたいときは、作業を2つに分けて作ってください。' : '';
+  }
+  $('addBtn').addEventListener('click', function () {
+    if (state.steps.length >= TC.MAX_STEPS) return;
+    state.steps.push(TC.emptyStep()); renderSteps(); update();
+    var last = document.querySelector('#steps > li:last-child textarea'); if (last) last.focus();
+  });
+
+  /* ---- 共通の項目 ---- */
+  var FIELDS = [['fTitle', 'title'], ['fShop', 'shop'], ['fAsk', 'ask']];
+  function fillFields() {
+    FIELDS.forEach(function (f) { $(f[0]).value = state[f[1]] || ''; $(f[0] + 'Cnt').textContent = countText(state[f[1]], TC.LIM[f[1]]); });
+    $('fDate').checked = state.showDate !== false;
+    $('fDateText').textContent = '最後に直した日をカードに入れる（' + TC.dateLabel(state.date) + '）';
+  }
+  FIELDS.forEach(function (f) {
+    $(f[0]).addEventListener('input', function () { state[f[1]] = $(f[0]).value; $(f[0] + 'Cnt').textContent = countText(state[f[1]], TC.LIM[f[1]]); update(); });
+  });
+  $('fDate').addEventListener('change', function () { state.showDate = $('fDate').checked; update(); });
+
+  /* ---- 見本（すべて架空。写真の代わりに簡単な絵を描く） ---- */
+  function sampleArt(kind) {
+    var c = document.createElement('canvas'); c.width = 960; c.height = 640;
+    var x = c.getContext('2d');
+    var bg = { 1: '#e9e2d6', 2: '#e3e6ee', 3: '#e6ece4', 4: '#efe7da', 5: '#e8e4dc', 6: '#dfe8ee' }[kind];
+    x.fillStyle = bg; x.fillRect(0, 0, 960, 640);
+    x.lineJoin = 'round'; x.lineCap = 'round';
+    function rect(a, b, w, hh, f, s) { x.fillStyle = f; x.fillRect(a, b, w, hh); if (s) { x.strokeStyle = s; x.lineWidth = 6; x.strokeRect(a, b, w, hh); } }
+    function txt(t, a, b, size, col, w) { x.fillStyle = col; x.font = (w || 800) + ' ' + size + 'px "Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(t, a, b); }
+    function circle(a, b, r, f, s) { x.beginPath(); x.arc(a, b, r, 0, Math.PI * 2); x.fillStyle = f; x.fill(); if (s) { x.strokeStyle = s; x.lineWidth = 6; x.stroke(); } }
+    if (kind === 1) { // 入口の札
+      rect(300, 60, 360, 580, '#8a6a4a', '#5a4430'); rect(340, 110, 280, 220, '#cfe3ee', '#5a4430'); circle(600, 400, 16, '#d6b46a');
+      x.strokeStyle = '#5a4430'; x.lineWidth = 5; x.beginPath(); x.moveTo(400, 340); x.lineTo(480, 300); x.lineTo(560, 340); x.stroke();
+      rect(370, 340, 220, 110, '#ffffff', '#5a4430'); txt('営業中', 480, 395, 58, '#b23a2e');
+    } else if (kind === 2) { // 照明とBGM
+      circle(330, 260, 120, '#ffe9a6', '#8a7a4a'); rect(290, 370, 80, 70, '#9aa0a8', '#5a5f66');
+      x.strokeStyle = '#e0b94a'; x.lineWidth = 10; [[-170, 0], [170, 0], [0, -170], [-120, -120], [120, -120]].forEach(function (d) { x.beginPath(); x.moveTo(330 + d[0] * .82, 260 + d[1] * .82); x.lineTo(330 + d[0], 260 + d[1]); x.stroke(); });
+      x.fillStyle = '#2b5c8a'; x.strokeStyle = '#2b5c8a'; x.lineWidth = 14; x.beginPath(); x.moveTo(680, 470); x.lineTo(680, 230); x.lineTo(800, 200); x.lineTo(800, 440); x.stroke();
+      circle(650, 470, 40, '#2b5c8a'); circle(770, 440, 40, '#2b5c8a');
+    } else if (kind === 3) { // レジ
+      rect(250, 330, 460, 220, '#5d6b7a', '#38414c'); rect(330, 140, 300, 180, '#38414c'); rect(350, 160, 260, 140, '#cfe8d6');
+      txt('11/10', 480, 230, 72, '#1e4a2e'); for (var r = 0; r < 3; r++) for (var q = 0; q < 4; q++) rect(300 + q * 95, 360 + r * 55, 70, 38, '#e6eaee');
+    } else if (kind === 4) { // 小銭
+      [[230, '#c9cdd2', '100'], [480, '#c9a35a', '10'], [730, '#dfe2e6', '1']].forEach(function (cn) {
+        for (var i = 0; i < 4; i++) circle(cn[0], 470 - i * 34, 92, cn[1], '#7a7f86');
+        txt(cn[2], cn[0], 368, 64, '#3a3f46');
+      });
+      rect(120, 560, 720, 30, '#b9ac95');
+    } else if (kind === 5) { // テーブルと椅子
+      rect(240, 280, 480, 40, '#9a7650', '#6a5036'); rect(280, 320, 30, 220, '#6a5036'); rect(650, 320, 30, 220, '#6a5036');
+      x.strokeStyle = '#6a5036'; x.lineWidth = 14; x.beginPath(); x.moveTo(140, 220); x.lineTo(140, 540); x.moveTo(140, 380); x.lineTo(230, 380); x.lineTo(230, 540); x.moveTo(820, 220); x.lineTo(820, 540); x.moveTo(820, 380); x.lineTo(730, 380); x.lineTo(730, 540); x.stroke();
+      rect(420, 230, 140, 46, '#7fb0d8', '#2b5c8a');
+    } else { // 看板
+      x.strokeStyle = '#5a4430'; x.lineWidth = 18; x.beginPath(); x.moveTo(330, 590); x.lineTo(480, 90); x.lineTo(630, 590); x.stroke();
+      rect(340, 140, 280, 360, '#2f3a33', '#8a6a4a'); txt('本日', 480, 230, 56, '#ffffff'); txt('営業中', 480, 320, 60, '#ffe08a'); txt('8:00〜', 480, 420, 48, '#ffffff', 600);
+    }
+    txt('見本の絵', 870, 600, 30, 'rgba(40,50,60,.65)', 700);
+    return new Promise(function (res) { c.toBlob(function (b) { res(b); }, 'image/jpeg', 0.9); });
+  }
+  var SAMPLE = { title: '開店前の準備', shop: 'みほん珈琲店', ask: '分からないときは店長に聞いてください', steps: [
+    { text: '入口の札を「営業中」に返す' }, { text: '照明とBGMをつける' }, { text: 'レジを立ち上げて日付を確かめる' },
+    { text: '釣り銭の小銭を種類ごとに数える', warn: true, note: '数えた金額をノートに書く' }, { text: 'テーブルを拭いて椅子を下ろす' }, { text: '看板を外に出す' }] };
+  function hasInput() {
+    return !!(TC.clean(state.title) || TC.clean(state.shop) || TC.clean(state.ask) || state.steps.some(function (s) { return TC.clean(s.text) || s.photo || s.warn || TC.clean(s.note); }));
+  }
+  // 「入力を消す」「見本に置き換える」のときだけ、写真の下書きを全部消す（起動時には消さない）
+  function clearAll() { state.steps.forEach(dropPhoto); TP.clear(); }
+  function useSample() {
+    function go() {
+      clearAll();
+      var st = TC.emptyState(); st.title = SAMPLE.title; st.shop = SAMPLE.shop; st.ask = SAMPLE.ask;
+      st.steps = SAMPLE.steps.map(function (x) { var s = TC.emptyStep(); s.text = x.text; s.warn = !!x.warn; s.note = x.note || ''; return s; });
+      state = st; renderSteps(); fillFields(); update();
+      st.steps.forEach(function (s, i) {
+        var tok = take(s.id);
+        sampleArt(i + 1).then(function (blob) { if (state === st && stillMine(s, tok)) applyPhoto(s, tok, blob); });
+      });
+    }
+    if (hasInput()) askThen($('confirmBox'), '入力中の内容と写真を、見本（架空の例）に置き換えます。よろしいですか。', '見本に置き換える', go);
+    else go();
+  }
+  $('sampleBtn').addEventListener('click', useSample);
+  $('clearBtn').addEventListener('click', function () {
+    askThen($('confirmBox'), '入力と写真をすべて消します。よろしいですか。', '入力を消す', function () { clearAll(); state = TC.emptyState(); renderSteps(); fillFields(); update(); });
+  });
+
+  /* ---- プレビュー・誤り ---- */
+  var raf = 0;
+  function paint() { raf = 0; TC.render($('pvCanvas'), TC.build(state, hasImg), imgOf, 4); }
+  function update(noSave) {
+    if (noSave !== true) {
+      // 直した日をカードに入れる（最後に直した日）
+      var td = TC.emptyState().date;
+      if (state.date !== td) { state.date = td; $('fDateText').textContent = '最後に直した日をカードに入れる（' + TC.dateLabel(td) + '）'; }
+      writeStore();
+    }
+    var b = TC.build(state, hasImg);
+    if (!raf) raf = requestAnimationFrame(paint);
+    printDirty = true; clearTimeout(printTimer); printTimer = setTimeout(prebuildPrint, 600);
+    [['title', 'fTitle'], ['shop', 'fShop'], ['ask', 'fAsk']].forEach(function (p) {
+      var show = p[0] === 'title' ? (b.errs.title && (TC.clean(state.title) || touchedTitle) ? b.errs.title : '') : (b.errs[p[0]] || '');
+      $(p[1] + 'Err').textContent = show; $(p[1]).classList.toggle('bad', !!show);
+    });
+    state.steps.forEach(function (s) {
+      var te = document.getElementById('er-t-' + s.id), ne = document.getElementById('er-n-' + s.id);
+      if (te) { te.textContent = b.errs['t-' + s.id] || ''; var ta = document.getElementById('txt-' + s.id); if (ta) ta.classList.toggle('bad', !!b.errs['t-' + s.id]); }
+      if (ne) { ne.textContent = b.errs['n-' + s.id] || ''; var ni = document.getElementById('note-' + s.id); if (ni) ni.classList.toggle('bad', !!b.errs['n-' + s.id]); }
+    });
+    var fm = $('fitMsg'), ready = !TC.hasErr(b) && b.steps.length > 0;
+    if (!b.steps.length) { fm.className = 'fitmsg ok'; fm.textContent = '写真と説明を入れると、手順カードができます。'; }
+    else if (TC.hasErr(b)) { fm.className = 'fitmsg ng'; fm.textContent = '入力に直すところがあります（赤い欄）。直すと印刷・保存できます。'; }
+    else { fm.className = 'fitmsg ok'; fm.textContent = '手順' + b.steps.length + 'つ・A4縦の1枚に収まっています。'; }
+    $('printBtn').disabled = !ready; $('saveBtn').disabled = !ready; $('showBtn').disabled = !ready;
+    $('saveMsg').textContent = ''; $('lp').textContent = '';
+  }
+  var touchedTitle = false;
+  $('fTitle').addEventListener('blur', function () { touchedTitle = true; update(true); });
+  $('zoomBtn').addEventListener('click', function () {
+    var on = !$('pv').classList.contains('zoom'); $('pv').classList.toggle('zoom', on);
+    $('zoomBtn').setAttribute('aria-pressed', String(on)); $('zoomBtn').textContent = on ? '元の大きさに戻す' : '大きく見る';
+  });
+
+  /* ---- 書き出し用の画像 ---- */
+  function bigCanvas(k) { var c = document.createElement('canvas'); TC.render(c, TC.build(state, hasImg), imgOf, k); return c; }
+  function ready() { var b = TC.build(state, hasImg); return !TC.hasErr(b) && b.steps.length > 0; }
+
+  /* ---- 印刷: 印刷の直前に、今の内容で A4 の画像を作り直す ---- */
+  function fillPrint() {
+    var pa = $('printArea'); pa.textContent = '';
+    if (!ready()) { pa.appendChild(h('p', { class: 'pmsg', text: '印刷できる状態ではありません。画面に戻って、入力を直してから印刷してください。' })); return null; }
+    var im = h('img', { alt: '' }); im.src = bigCanvas(8).toDataURL('image/jpeg', 0.92);
+    pa.appendChild(im); return im;
+  }
+  // 入力が止まったら、印刷用の画像を先に作ってデコードしておく（Ctrl+P やブラウザのメニューからの印刷に間に合わせる）
+  var printDirty = true, printTimer = 0;
+  function prebuildPrint() { printTimer = 0; var im = fillPrint(); printDirty = false; if (im && im.decode) im.decode().catch(function () { }); }
+  // 印刷の直前: 入力が変わっていれば作り直す
+  window.addEventListener('beforeprint', function () { if (printDirty || !$('printArea').firstChild) { clearTimeout(printTimer); prebuildPrint(); } });
+  $('printBtn').addEventListener('click', function () {
+    clearTimeout(printTimer);
+    var im = fillPrint(); printDirty = false; if (!im) { update(true); return; }
+    var go = function () { window.print(); };
+    if (im.decode) im.decode().then(go, go); else go();
+  });
+
+  /* ---- 画像で保存（PC はダウンロード、iPhone・iPad は共有シート→だめなら長押し） ---- */
+  function isIOS(ua, platform, touchPoints) { return /iPhone|iPad|iPod/.test(ua || '') || (platform === 'MacIntel' && (touchPoints || 0) > 1); }
+  window.TC_isIOS = isIOS;
+  var ios = isIOS(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
+  function dataUrlToFile(url, name) {
+    var bin = atob(url.split(',')[1]), u8 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return new File([u8], name, { type: 'image/jpeg' });
+  }
+  function fname() { return 'tejun-card-' + state.date + '.jpg'; }
+  function showLongPress(url, why) {
+    var lp = $('lp'); lp.textContent = '';
+    lp.appendChild(h('p', { class: 'small', text: (why ? why + ' ' : '') + (ios ? '下の画像を長押しして、「写真に追加」または「画像を保存」を選んでください。' : '下の画像を右クリック（長押し）して、画像を保存してください。') }));
+    var im = h('img', { alt: '手順カードの画像（長押しで保存）' }); im.src = url; lp.appendChild(im);
+  }
+  $('saveBtn').addEventListener('click', function () {
+    var msg = $('saveMsg'); msg.textContent = ''; $('lp').textContent = '';
+    if (!ready()) return;
+    // 利用者の操作中に同期的に作る（toBlob など非同期の処理をはさまない）
+    var url = bigCanvas(1240 / 210).toDataURL('image/jpeg', 0.9), name = fname();
+    if (ios) {
+      var file = null; try { file = dataUrlToFile(url, name); } catch (e) { }
+      if (file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file] }).then(function () { msg.textContent = '共有メニューを閉じました。保存先を選べていれば保存されています。'; })
+          .catch(function (e) { if (e && e.name === 'AbortError') msg.textContent = '共有メニューを閉じました。保存はされていません。'; else showLongPress(url, '共有メニューを開けませんでした。'); });
+        return;
+      }
+      showLongPress(url, 'この端末では共有メニューを使えません。'); return;
+    }
+    var a = document.createElement('a');
+    if (!('download' in a)) { showLongPress(url, 'このブラウザではそのまま保存できません。'); return; }
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    msg.textContent = 'ダウンロードを試しました（' + name + '）。保存されないときは「画像を表示して保存」を使ってください（LINEなどアプリ内のブラウザでは保存できないことがあります）。';
+  });
+  $('showBtn').addEventListener('click', function () { if (!ready()) return; $('saveMsg').textContent = ''; showLongPress(bigCanvas(1240 / 210).toDataURL('image/jpeg', 0.9), ''); });
+
+  /* ---- はじめ: 写真の下書きを読み込む ---- */
+  renderSteps(); fillFields(); noteStore(); update(true);
+  TP.ready().then(function () {
+    var need = state.steps.filter(function (s) { return s.photo; });
+    return Promise.all(need.map(function (s) {
+      var tok = take(s.id);
+      return TP.get(s.id).then(function (blob) {
+        if (!stillMine(s, tok)) return;
+        if (!blob) { s.photo = false; photoMissing = true; return; }
+        return blobToImg(blob).then(function (im) {
+          if (!stillMine(s, tok)) { URL.revokeObjectURL(im.src); return; }
+          imgs[s.id] = im; refreshPhoto(s);
+        }, function () { s.photo = false; photoMissing = true; });
+      });
+    }));
+    // 手順にない写真は、起動時には消さない（下書きが読めなかったときや、別のタブで開いているときに写真を消さないため）
+  }).then(function () { noteStore(); update(true); });
+
+  window.TCUI = { state: function () { return state; }, update: update, useSample: useSample, imgs: imgs, setPhotoFile: function (i, f) { var m = { textContent: '' }; setPhoto(state.steps[i], f, m); return m; } };
+})();
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon='{"token": "b4c9f7e78daf4edb84ef52b88633f649"}'></script>
+</body>
+</html>
